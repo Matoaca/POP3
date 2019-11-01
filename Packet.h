@@ -1,38 +1,22 @@
-#include "Range.h"
 #include <iostream>
-
-enum MsgType{
-	Joinrequest,
-	Joinresponse,
-	PEEP_UPDATE
-};
+#include <vector>
 
 struct Address{
 	int port;
 	char host[64];
 };
 
-struct Packet{
-    MsgType type;
-	Address src;
-	Address dest;
-    unsigned char payload[60];
-};
-
 struct Msg{
-    int size;
-    char buffer[56];
+    string command
+    string message;
 };
 
-struct JoinRequest{
-	Point dest;
+//create user struct
+struct Mailbox{
+	string username;
+	string password;
+	bool toDelete;
+	vector <string> messages;
 };
 
-struct JoinResponse{
-	Range range;
-};
-
-struct NeighborUpdate{
-	
-};
 

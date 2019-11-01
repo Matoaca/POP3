@@ -30,7 +30,7 @@ void Socket::writeBytes(void* bytes, int len){
 }
 
 void Socket::writeString(string str){
-	str += '\0';
+	str += "\r\n"; //adds CR to end of string for us
 	write(fd,str.c_str(),sizeof(char)*str.size());
 }
 
@@ -38,11 +38,17 @@ string Socket::readString(){
 	string rv = "";
 	char token;
 	int count = 0;
+	bool r = false;
 	do{
 		read(fd,&token,sizeof(char));
 		rv += token;
+		if(token = '\r'){
+			r = true;
+		}else{
+			r = false;
+		}
 		count += 1;
-	}while(token != 0 && count < 256);
+	}while(token != '\n' || !r); //if != \n, or prev != r, loop will continue
 	return rv;
 }
 

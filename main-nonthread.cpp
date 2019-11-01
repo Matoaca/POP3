@@ -3,20 +3,21 @@
 
 using namespace std;
 
-vector<char*> parseMsg(char* msg){
-	vector<char*> msgParts;
-	char* firstpart;
-	char* rest;
+//put into struct instead of vector
+Msg parseMsg(string msg){
+	string firstpart;
+	string rest;
 	for(int i = 0; i < 4; i++){
 		fisrtpart = firstpart + msg[i];
 	}
-	for(int i = 4; i < msg.size(); i++){
-		rest = rest + msg[i];
+	for(int i = 5; i < msg.size(); i++){
+		rest = rest + msg[i]; 
 	}
-	msgParts.push_back(fistpart);
-	msgParts.push_back(rest);
+	Msg msg;
+	msg.command = fistpart;
+	msg.message = rest;
 	
-	return msgParts;
+	return msg;
 }
 
 bool isFoundIn(char* msg, vector<char*>Mailbox){
@@ -27,44 +28,45 @@ bool isFoundIn(char* msg, vector<char*>Mailbox){
 	return false;
 }
 
+//need to fix
 void authorize(Socket socket){
-	char* msg;
 	//Read in the USER
-	socket.readBytes(&msg, sizeof());
-	vector<char*>msgParts = parseMsg(msg);
-	if(msgParts[0] == "USER"){
-		if(!(isFoundIn(msgParts[1], Mailbox)))
-			socket.writeBytes("-ERR Invalid USER", 17);
+	string msg = socket.readString();//read until \r\n, change in readBytes
+	Msg msgParts = parseMsg(msg);
+	if(msgParts.command == "USER"){
+		if(!(isFoundIn(msgParts.message, Mailbox)))
+			socket.writeString("-ERR Invalid USER", 17);
 			return;
 	}else{
-		socket.writeBytes("-ERR Invalid USER", 17);
+		socket.writeString("-ERR Invalid USER", 17);
 		return;
 	}
-	socket.writeBytes("+OK USER is valid", 17);
+	socket.writeString("+OK USER is valid", 17);
 
-	socket.readBytes(&msg, sizeof());
+	msg = socket.readString();
 	msgParts = parseMsg(msg);
-	if(msgParts[0] != "PASS"){
-		if(!(isFoundIn(msgParts[1], Mailbox)))
-			socket.writeBytes("-ERR Invalid PASS", 17);
+	if(msgParts.command == "PASS"){
+		if(!(isFoundIn(msgParts.message, Mailbox)))
+			socket.writeString("-ERR Invalid PASS", 17);
 			return;
 	}else{
-		socket.writeBytes("-ERR Invalid PASS", 17);
+		socket.writeString("-ERR Invalid PASS", 17);
 		return;
 	}
-	socket.writeBytes("+OK PASS is valid", 17);
+	socket.writeString("+OK PASS is valid", 17);
 }
 
+//use readString and writeString everywhere
 void Transaction(Socket socket){
-	socket.readBytes(&msg, sizeof());
-	vector<char*>msgParts = parseMsg(msg);
+	string str = socket.readString();
+	Msg msg = parseMsg(str);
 
-	if(msg == "STAT"){}
-	else if(msg == "LIST"){}
-	else if(msg == "RETR"){}
-	else if(msg == "DELE"){}
-	else if(msg == "NOOP"){}
-	else if(msg == "RSET"){}
+	if(msg.command == "STAT"){}
+	else if(msg.command == "LIST"){}
+	else if(msg.command == "RETR"){}
+	else if(msg.command == "DELE"){}
+	else if(msg.command == "NOOP"){}
+	else if(msg.command == "RSET"){}
 	else{}
 }
 
@@ -87,10 +89,10 @@ void server(string port){
 			}else if(sockets[i].hasData){
 				//handle that data
 				
-				Packet p;
-				sockets[i].readBytes(&p, sizeof(Packet));
+				string str = sockets[i].readString();
+				//do something with it
 			}
-			sockets[i].writeBytes(&p, sizeof(Packet));
+			sockets[i].writeString("tell them stuff");
 		}
 	}
 }
