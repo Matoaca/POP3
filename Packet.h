@@ -11,12 +11,16 @@ struct Msg{
     string message;
 };
 
+struct Mail{
+	string message;
+	bool toDelete;
+};
+
 //create user struct
 struct Mailbox{
 	string username;
 	string password;
-	bool toDelete;
-	vector <string> messages;
+	vector <Mail> messages;
 };
 
 

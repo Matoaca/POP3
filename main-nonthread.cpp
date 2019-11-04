@@ -58,16 +58,53 @@ void authorize(Socket socket){
 
 //use readString and writeString everywhere
 void Transaction(Socket socket){
-	string str = socket.readString();
-	Msg msg = parseMsg(str);
+	while(1){
+		string str = socket.readString();
+		Msg msg = parseMsg(str);
 
-	if(msg.command == "STAT"){}
-	else if(msg.command == "LIST"){}
-	else if(msg.command == "RETR"){}
-	else if(msg.command == "DELE"){}
-	else if(msg.command == "NOOP"){}
-	else if(msg.command == "RSET"){}
-	else{}
+		if(msg.command == "STAT"){
+			
+		}
+		else if(msg.command == "LIST"){
+			
+		}
+		else if(msg.command == "RETR"){
+		}
+		else if(msg.command == "DELE"){
+			//Find the message to be deleted
+			if(!messages[msg.message].toDelete){
+				socket.writeString{"+OK message "};
+				//Set the message to be deleted
+				messages[i].toDelete = true;
+			}
+		}
+		else if(msg.command == "NOOP"){
+			socket.writeString("+OK", 3);
+		}
+		else if(msg.command == "RSET"){
+			//loop the Messages in teh mailbox and reset the toDelete bool to false
+			for(int i = 0; i < messages.size(); i++){
+				messages[i].toDelete = false;
+			}
+		}
+		else if(msg.command == "QUIT"){
+			socket.writeString("+OK");
+			break;
+		}else{
+			
+		}
+	}
+}
+
+void Update(Socket socket, Mailbox mailbox){
+	//Loop through the Mailbox's messages
+	for(int i = 0; i < mailbox.messages.size(); i++){
+		//If the message in teh mailbox is to be deleted
+		if(mailbox.messages[i].toDelete){
+			//Delete it
+		}
+	}
+
 }
 
 void server(string port){
