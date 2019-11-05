@@ -3,6 +3,8 @@
 
 using namespace std;
 
+vector <Mailbox> users;
+
 //put into struct instead of vector
 Msg parseMsg(string msg){
 	string firstpart;
@@ -19,45 +21,66 @@ Msg parseMsg(string msg){
 	
 	return msg;
 }
+/*
+int userNo(string name){
+	for(int i = 0; i < users.size(); ++i){
+		if(name == users[i].username){
+			return i;
+		}
+	}
+	return -1; //error
+}*/
 
-bool isFoundIn(char* msg, vector<char*>Mailbox){
-	for(int i = 0; i < Mailbox.size(); i++){
-		if(msg == Mailbox[i])
+int userFound(string msg){ //??
+	for(int i = 0; i < users.size(); i++){
+		if(msg == users[i].username)
+			return i;
+	}
+	return -1;
+}
+
+bool passFound(string msg, int spot){ //??
+	if(msg == users[spot].password){
 			return true;
 	}
 	return false;
 }
 
 //need to fix
-void authorize(Socket socket){
+void Authorize(Socket socket){
 	//Read in the USER
-	string msg = socket.readString();//read until \r\n, change in readBytes
+	string msg = socket.readString();
 	Msg msgParts = parseMsg(msg);
+	int person;
 	if(msgParts.command == "USER"){
-		if(!(isFoundIn(msgParts.message, Mailbox)))
+		person = userFound(msgParts.message);//find username
+		if(person == -1){
 			socket.writeString("-ERR Invalid USER", 17);
 			return;
+		}
 	}else{
 		socket.writeString("-ERR Invalid USER", 17);
 		return;
 	}
 	socket.writeString("+OK USER is valid", 17);
-
+	
 	msg = socket.readString();
 	msgParts = parseMsg(msg);
 	if(msgParts.command == "PASS"){
-		if(!(isFoundIn(msgParts.message, Mailbox)))
+		if(!(passFound(msgParts.message, person))){
 			socket.writeString("-ERR Invalid PASS", 17);
 			return;
+		}
 	}else{
 		socket.writeString("-ERR Invalid PASS", 17);
 		return;
 	}
 	socket.writeString("+OK PASS is valid", 17);
+	Transaction(socket, person);
 }
 
 //use readString and writeString everywhere
-void Transaction(Socket socket){
+void Transaction(Socket socket, int boxSpot){
 	while(1){
 		string str = socket.readString();
 		Msg msg = parseMsg(str);
@@ -72,7 +95,7 @@ void Transaction(Socket socket){
 		}
 		else if(msg.command == "DELE"){
 			//Find the message to be deleted
-			if(!messages[msg.message].toDelete){
+			if(!users[boxSpot].messages[msg.message].toDelete){
 				socket.writeString{"+OK message "};
 				//Set the message to be deleted
 				messages[i].toDelete = true;
@@ -83,7 +106,7 @@ void Transaction(Socket socket){
 		}
 		else if(msg.command == "RSET"){
 			//loop the Messages in teh mailbox and reset the toDelete bool to false
-			for(int i = 0; i < messages.size(); i++){
+			for(int i = 0; i < users[boxSpot].messages.size(); i++){
 				messages[i].toDelete = false;
 			}
 		}
@@ -94,17 +117,19 @@ void Transaction(Socket socket){
 			
 		}
 	}
+	Update(socket,boxSpot);
 }
 
-void Update(Socket socket, Mailbox mailbox){
+void Update(Socket socket, int boxSpot){
 	//Loop through the Mailbox's messages
-	for(int i = 0; i < mailbox.messages.size(); i++){
+	for(int i = users[boxSpot].messages.size()-1; i >= 0; --i){
 		//If the message in teh mailbox is to be deleted
-		if(mailbox.messages[i].toDelete){
+		if(users[boxSpot].messages[i].toDelete){
 			//Delete it
+			users[boxSpot].messages.erase(users[boxSpot].messages.begin()+i);
 		}
 	}
-
+	
 }
 
 void server(string port){
@@ -125,7 +150,7 @@ void server(string port){
 				sockets.erase(sockets.begin()+i);
 			}else if(sockets[i].hasData){
 				//handle that data
-				
+				Authorize(sockets[i]);
 				string str = sockets[i].readString();
 				//do something with it
 			}
