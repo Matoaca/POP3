@@ -151,10 +151,11 @@ void server(string port){
 			}else if(sockets[i].hasData){
 				//handle that data
 				Authorize(sockets[i]);
-				string str = sockets[i].readString();
+				sockets[i].writeString("pop3 server signing off");
+				//string str = sockets[i].readString();
 				//do something with it
 			}
-			sockets[i].writeString("tell them stuff");
+			//sockets[i].writeString("tell them stuff");
 		}
 	}
 }
