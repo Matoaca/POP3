@@ -5,7 +5,6 @@ using namespace std;
 
 vector <Mailbox> users;
 
-//put into struct instead of vector
 Msg parseMsg(string msg){
 	string firstpart;
 	string rest;
@@ -21,15 +20,6 @@ Msg parseMsg(string msg){
 	
 	return msg;
 }
-/*
-int userNo(string name){
-	for(int i = 0; i < users.size(); ++i){
-		if(name == users[i].username){
-			return i;
-		}
-	}
-	return -1; //error
-}*/
 
 int userFound(string msg){ //??
 	for(int i = 0; i < users.size(); i++){
@@ -46,13 +36,16 @@ bool passFound(string msg, int spot){ //??
 	return false;
 }
 
-//need to fix
 void Authorize(Socket socket){
 	//Read in the USER
 	string msg = socket.readString();
 	Msg msgParts = parseMsg(msg);
 	int person;
-	if(msgParts.command == "USER"){
+	
+	if(msg.command == "QUIT"){
+		socket.writeString("+OK POP3 server signing off", 27);
+		return;
+	}else if(msgParts.command == "USER"){
 		person = userFound(msgParts.message);//find username
 		if(person == -1){
 			socket.writeString("-ERR Invalid USER", 17);
@@ -66,7 +59,10 @@ void Authorize(Socket socket){
 	
 	msg = socket.readString();
 	msgParts = parseMsg(msg);
-	if(msgParts.command == "PASS"){
+	if(msg.command == "QUIT"){
+		socket.writeString("+OK POP3 server signing off", 27);
+		return;
+	}else if(msgParts.command == "PASS"){
 		if(!(passFound(msgParts.message, person))){
 			socket.writeString("-ERR Invalid PASS", 17);
 			return;
@@ -126,7 +122,7 @@ void Transaction(Socket socket, int boxSpot){
 			socket.writeString(rv);
 		}
 		else if(msg.command == "QUIT"){
-			socket.writeString("+OK");
+			//socket.writeString("+OK"); //dont need, has +OK when in update
 			break;
 		}else{
 			
@@ -173,11 +169,8 @@ void server(string port){
 			}else if(sockets[i].hasData){
 				//handle that data
 				Authorize(sockets[i]);
-				sockets[i].writeString("pop3 server signing off");
-				//string str = sockets[i].readString();
-				//do something with it
+				sockets[i].close();
 			}
-			//sockets[i].writeString("tell them stuff");
 		}
 	}
 }
