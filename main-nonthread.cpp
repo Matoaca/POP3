@@ -95,20 +95,35 @@ void Transaction(Socket socket, int boxSpot){
 		}
 		else if(msg.command == "DELE"){
 			//Find the message to be deleted
-			if(!users[boxSpot].messages[msg.message].toDelete){
-				socket.writeString{"+OK message "};
-				//Set the message to be deleted
-				messages[i].toDelete = true;
+			int num = stoi(msg.messege);
+			if(num <= users[boxSpot].messages.size()-1 && num >= 0){
+				if(!users[boxSpot].messages[msg.message].toDelete){
+					string rv = "+OK message " + msg.message + " deleted";
+					socket.writeString(rv);
+					//Set the message to be deleted
+					users[boxSpot].messages[msg.message].toDelete = true;
+				}else{
+					string rv = "-ERR message " + msg.message + " already deleted";
+					socket.writeString(rv);
+				}
+			}else{
+				string rv = "-ERR message " + msg.message + " not found";
+				socket.writeString(rv);
 			}
 		}
 		else if(msg.command == "NOOP"){
-			socket.writeString("+OK", 3);
+			socket.writeString("+OK");
 		}
 		else if(msg.command == "RSET"){
 			//loop the Messages in teh mailbox and reset the toDelete bool to false
-			for(int i = 0; i < users[boxSpot].messages.size(); i++){
-				messages[i].toDelete = false;
+			int i;
+			int octets = 0;
+			for(i = 0; i < users[boxSpot].messages.size(); i++){
+				users[boxSpot].messages[i].toDelete = false;
+				octets += users[boxSpot].messages[i].message.size();
 			}
+			string rv = "+OK maildrop has " + i + " messages (" + octets + " octets)";
+			socket.writeString(rv);
 		}
 		else if(msg.command == "QUIT"){
 			socket.writeString("+OK");
@@ -129,7 +144,14 @@ void Update(Socket socket, int boxSpot){
 			users[boxSpot].messages.erase(users[boxSpot].messages.begin()+i);
 		}
 	}
-	
+	string rv;
+	if(users[boxSpot].messages.size() > 0){
+		rv = "+OK " + users[boxSpot].username + "POP3 server signing off (" users[boxSpot].messages.size() +
+		" message(s) left)";
+	}else{
+		rv = "+OK " + users[boxSpot].username + "POP3 server signing off (maildrop empty)";
+	}
+	socket.writeString(rv);
 }
 
 void server(string port){
