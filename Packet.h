@@ -7,7 +7,7 @@ struct Address{
 };
 
 struct Msg{
-    string command
+    string cmd;
     string message;
 };
 

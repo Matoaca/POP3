@@ -1,21 +1,30 @@
 #include "Socket.h"
+#include "Packet.h"
+#include <sstream>
 #include <iostream>
 
 using namespace std;
 
+Msg parseMsg(string str);
+int userFound(string msg);
+bool passFound(string msg);
+void Authorize(Socket socket);
+void Transaction(Socket socket, int boxSpot);
+void Update(Socket socket, int boxSpot);
+
 vector <Mailbox> users;
 
-Msg parseMsg(string msg){
+Msg parseMsg(string str){
 	string firstpart;
 	string rest;
 	for(int i = 0; i < 4; i++){
-		fisrtpart = firstpart + msg[i];
+		firstpart = firstpart + str[i];
 	}
-	for(int i = 5; i < msg.size(); i++){
-		rest = rest + msg[i]; 
+	for(int i = 5; i < str.size(); i++){
+		rest = rest + str[i]; 
 	}
 	Msg msg;
-	msg.command = fistpart;
+	msg.cmd = firstpart;
 	msg.message = rest;
 	
 	return msg;
@@ -42,36 +51,36 @@ void Authorize(Socket socket){
 	Msg msgParts = parseMsg(msg);
 	int person;
 	
-	if(msg.command == "QUIT"){
-		socket.writeString("+OK POP3 server signing off", 27);
+	if(msgParts.cmd == "QUIT"){
+		socket.writeString("+OK POP3 server signing off");
 		return;
-	}else if(msgParts.command == "USER"){
+	}else if(msgParts.cmd == "USER"){
 		person = userFound(msgParts.message);//find username
 		if(person == -1){
-			socket.writeString("-ERR Invalid USER", 17);
+			socket.writeString("-ERR Invalid USER");
 			return;
 		}
 	}else{
-		socket.writeString("-ERR Invalid USER", 17);
+		socket.writeString("-ERR Invalid USER");
 		return;
 	}
-	socket.writeString("+OK USER is valid", 17);
+	socket.writeString("+OK USER is valid");
 	
 	msg = socket.readString();
 	msgParts = parseMsg(msg);
-	if(msg.command == "QUIT"){
-		socket.writeString("+OK POP3 server signing off", 27);
+	if(msgParts.cmd == "QUIT"){
+		socket.writeString("+OK POP3 server signing off");
 		return;
-	}else if(msgParts.command == "PASS"){
+	}else if(msgParts.cmd == "PASS"){
 		if(!(passFound(msgParts.message, person))){
-			socket.writeString("-ERR Invalid PASS", 17);
+			socket.writeString("-ERR Invalid PASS");
 			return;
 		}
 	}else{
-		socket.writeString("-ERR Invalid PASS", 17);
+		socket.writeString("-ERR Invalid PASS");
 		return;
 	}
-	socket.writeString("+OK PASS is valid", 17);
+	socket.writeString("+OK PASS is valid");
 	Transaction(socket, person);
 }
 
@@ -80,48 +89,68 @@ void Transaction(Socket socket, int boxSpot){
 	while(1){
 		string str = socket.readString();
 		Msg msg = parseMsg(str);
+		stringstream rv;
 
-		if(msg.command == "STAT"){
+		if(msg.cmd == "STAT"){
+			int octets = 0;
+			rv << "+OK ";
+			rv << users[boxSpot].messages.size();
+			for(int i = 0; i < users[boxSpot].messages.size(); i++){
+				octets = octets + users[boxSpot].messages[i].message.size();
+			}
+			rv << " " << octets;
+			socket.writeString(rv.str());
+		}
+		else if(msg.cmd == "LIST"){
 			
 		}
-		else if(msg.command == "LIST"){
-			
+		else if(msg.cmd == "RETR"){
+			int num = stoi(msg.message);
+			if(num <= users[boxSpot].messages.size()-1 && num >= 1 && !(users[boxSpot].messages[num-1].toDelete)){
+				rv << "+OK " << users[boxSpot].messages[num-1].message.size() << " octets";
+				socket.writeString(rv.str());
+				socket.writeString(users[boxSpot].messages[num-1].message);
+				socket.writeString(".");
+				users[boxSpot].messages[num-1].toDelete = true;
+			}else{
+				rv << "-ERR no such message";
+				socket.writeString(rv.str());
+			}
 		}
-		else if(msg.command == "RETR"){
-		}
-		else if(msg.command == "DELE"){
+		else if(msg.cmd == "DELE"){
 			//Find the message to be deleted
-			int num = stoi(msg.messege);
+			int num = stoi(msg.message);
 			if(num <= users[boxSpot].messages.size()-1 && num >= 0){
-				if(!users[boxSpot].messages[msg.message].toDelete){
-					string rv = "+OK message " + msg.message + " deleted";
-					socket.writeString(rv);
+				if(!users[boxSpot].messages[num-1].toDelete){
+					rv << "+OK message " << msg.message << " deleted";
+					socket.writeString(rv.str());
 					//Set the message to be deleted
-					users[boxSpot].messages[msg.message].toDelete = true;
+					users[boxSpot].messages[num-1].toDelete = true;
 				}else{
-					string rv = "-ERR message " + msg.message + " already deleted";
-					socket.writeString(rv);
+					rv << "-ERR message " << msg.message << " already deleted";
+					socket.writeString(rv.str());
 				}
 			}else{
-				string rv = "-ERR message " + msg.message + " not found";
-				socket.writeString(rv);
+				rv << "-ERR message " << msg.message << " not found";
+				socket.writeString(rv.str());
 			}
 		}
-		else if(msg.command == "NOOP"){
+		else if(msg.cmd == "NOOP"){
 			socket.writeString("+OK");
 		}
-		else if(msg.command == "RSET"){
+		else if(msg.cmd == "RSET"){
 			//loop the Messages in teh mailbox and reset the toDelete bool to false
-			int i;
+			int amount;
 			int octets = 0;
-			for(i = 0; i < users[boxSpot].messages.size(); i++){
+			for(int i = 0; i < users[boxSpot].messages.size(); i++){
 				users[boxSpot].messages[i].toDelete = false;
 				octets += users[boxSpot].messages[i].message.size();
+				amount = i;
 			}
-			string rv = "+OK maildrop has " + i + " messages (" + octets + " octets)";
-			socket.writeString(rv);
+			rv << "+OK maildrop has " << amount << " messages (" << octets << " octets)";
+			socket.writeString(rv.str());
 		}
-		else if(msg.command == "QUIT"){
+		else if(msg.cmd == "QUIT"){
 			//socket.writeString("+OK"); //dont need, has +OK when in update
 			break;
 		}else{
@@ -140,14 +169,13 @@ void Update(Socket socket, int boxSpot){
 			users[boxSpot].messages.erase(users[boxSpot].messages.begin()+i);
 		}
 	}
-	string rv;
+	stringstream rv;
 	if(users[boxSpot].messages.size() > 0){
-		rv = "+OK " + users[boxSpot].username + "POP3 server signing off (" users[boxSpot].messages.size() +
-		" message(s) left)";
+		rv << "+OK " << users[boxSpot].username << "POP3 server signing off (" << users[boxSpot].messages.size() << " message(s) left)";
 	}else{
-		rv = "+OK " + users[boxSpot].username + "POP3 server signing off (maildrop empty)";
+		rv << "+OK " << users[boxSpot].username << "POP3 server signing off (maildrop empty)";
 	}
-	socket.writeString(rv);
+	socket.writeString(rv.str());
 }
 
 void server(string port){
