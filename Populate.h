@@ -1,6 +1,6 @@
 #include "Packet.h"
 
-vector<Mailbox> users;
+vector <Mailbox> users;
 
 void populateMailbox();
 	
