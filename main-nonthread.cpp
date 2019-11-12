@@ -1,7 +1,6 @@
-#include "Socket.h"
-#include "Packet.h"
 #include <sstream>
-#include <iostream>
+#include "Socket.h"
+#include "Populate.h"
 
 using namespace std;
 
@@ -12,7 +11,7 @@ void Authorize(Socket socket);
 void Transaction(Socket socket, int boxSpot);
 void Update(Socket socket, int boxSpot);
 
-vector <Mailbox> users;
+//vector <Mailbox> users;
 
 Msg parseMsg(string str){
 	string firstpart;
@@ -20,8 +19,12 @@ Msg parseMsg(string str){
 	for(int i = 0; i < 4; i++){
 		firstpart = firstpart + str[i];
 	}
-	for(int i = 5; i < str.size(); i++){
-		rest = rest + str[i]; 
+	if(str.size() > 5){
+		for(int i = 5; i < str.size(); i++){
+			rest = rest + str[i]; 
+		}
+	}else{
+		rest = "";
 	}
 	Msg msg;
 	msg.cmd = firstpart;
@@ -102,7 +105,30 @@ void Transaction(Socket socket, int boxSpot){
 			socket.writeString(rv.str());
 		}
 		else if(msg.cmd == "LIST"){
-			
+			int num = stoi(msg.message);
+			if(msg.message == ""){
+				int octets = 0;
+				rv << "+OK " << users[boxSpot].messages.size() << "messages (";
+				for(int i = 0; i < users[boxSpot].messages.size(); i++){
+					octets = octets + users[boxSpot].messages[i].message.size();
+				}
+				rv << octets << " octets)";
+				socket.writeString(rv.str());
+				
+				
+				for(int i = 0; i < users[boxSpot].messages.size(); i++){
+					stringstream strstr;
+					strstr << (i+1) << " " << users[boxSpot].messages[i].message.size();
+					socket.writeString(strstr.str());
+				}
+				socket.writeString(".");
+			}else if(num <= users[boxSpot].messages.size()-1 && num >= 1 && !(users[boxSpot].messages[num-1].toDelete)){
+				rv << "+OK " << msg.message << " " << users[boxSpot].messages[num].message.size();
+				socket.writeString(rv.str());
+			}else{
+				rv << "-ERR no such message, only " << users[boxSpot].messages.size() << " messages in maildrop";
+				socket.writeString(rv.str());
+			}
 		}
 		else if(msg.cmd == "RETR"){
 			int num = stoi(msg.message);
@@ -214,6 +240,7 @@ void client(string addr, string port){
 
 
 int main(int argc, char** argv){
+	populateMailbox();
 	if(argc == 2){
 		//port number so this is the server
 		server(argv[1]);
