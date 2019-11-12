@@ -1,7 +1,5 @@
-#include "Socket.h"
-//#include "Packet.h"
 #include <sstream>
-#include <iostream>
+#include "Socket.h"
 #include "Populate.h"
 
 using namespace std;
@@ -115,6 +113,7 @@ void Transaction(Socket socket, int boxSpot){
 					octets = octets + users[boxSpot].messages[i].message.size();
 				}
 				rv << octets << " octets)";
+				socket.writeString(rv.str());
 				
 				
 				for(int i = 0; i < users[boxSpot].messages.size(); i++){
@@ -122,14 +121,14 @@ void Transaction(Socket socket, int boxSpot){
 					strstr << (i+1) << " " << users[boxSpot].messages[i].message.size();
 					socket.writeString(strstr.str());
 				}
-				socket.writeString(".."); //two dots because the first one is deleted?
-				socket.writeString(rv.str());
+				socket.writeString(".");
 			}else if(num <= users[boxSpot].messages.size()-1 && num >= 1 && !(users[boxSpot].messages[num-1].toDelete)){
-				rv << "-ERR no such message, only " << users[boxSpot].messages.size() << " messages in maildrop";
+				rv << "+OK " << msg.message << " " << users[boxSpot].messages[num].message.size();
+				socket.writeString(rv.str());
 			}else{
-				
+				rv << "-ERR no such message, only " << users[boxSpot].messages.size() << " messages in maildrop";
+				socket.writeString(rv.str());
 			}
-			socket.writeString(rv.str());
 		}
 		else if(msg.cmd == "RETR"){
 			int num = stoi(msg.message);
@@ -241,6 +240,7 @@ void client(string addr, string port){
 
 
 int main(int argc, char** argv){
+	populateMailbox();
 	if(argc == 2){
 		//port number so this is the server
 		server(argv[1]);
