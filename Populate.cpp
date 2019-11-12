@@ -1,7 +1,7 @@
 #include "Populate.h"
 
 
-void populate(){
+void populateMailbox(){
 
 	Mail tempMail;
 	tempMail.toDelete = false;

@@ -3,6 +3,6 @@
 
 vector<Mailbox> users;
 
-void populateMailbox()
+void populateMailbox();
 	
 
