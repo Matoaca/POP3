@@ -337,7 +337,17 @@ void client(string addr, string port){
 	Socket s;
 	s.open(addr, port);
 	
-	
+	while(1){
+		string input = "";
+		string output = "";
+		getline(cin, input);
+		s.writeString(input);
+		output = s.readString();
+		cout << input << endl;
+		cout << output << endl;
+		if(input == "QUIT")
+			break;
+	}
 
 }
 
