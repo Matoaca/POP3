@@ -42,13 +42,16 @@ string Socket::readString(){
 	do{
 		read(fd,&token,sizeof(char));
 		rv += token;
-		if(token = '\r'){
-			r = true;
-		}else{
-			r = false;
-		}
+	//	if(token = '\r'){
+	//		r = true;
+	//	}else{
+	//		r = false;
+	//	}
 		count += 1;
-	}while(token != '\n' || !r); //if != \n, or prev != r, loop will continue
+	}while(rv.find("\r\n") == -1);
+	//while(token != '\n' || !r); //if != \n, or prev != r, loop will continue
+	rv.pop_back();
+	rv.pop_back();
 	return rv;
 }
 

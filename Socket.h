@@ -23,6 +23,7 @@ struct Socket{
 	string port;
 	bool isClosed = false;
 	bool hasData = false;
+	int auth = -1;
 
 	void open(string host,string porto);
 	void close();
