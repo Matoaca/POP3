@@ -167,7 +167,14 @@ void Transaction(Socket socket, int boxSpot){
 			if(num <= users[boxSpot].messages.size() && num >= 1 && !(users[boxSpot].messages[num-1].toDelete)){
 				rv << "+OK " << users[boxSpot].messages[num-1].message.size() << " octets";
 				socket.writeString(rv.str());
-				socket.writeString(users[boxSpot].messages[num-1].message);
+				
+				if(users[boxSpot].messages[num-1].message == "."){
+					string str = users[boxSpot].messages[num-1].message + ".";
+					socket.writeString(str);
+				}
+				else{
+					socket.writeString(users[boxSpot].messages[num-1].message);
+				}
 				socket.writeString(".");
 			}else{
 				rv << "-ERR no such message";
