@@ -69,7 +69,7 @@ int Authorize(Socket socket){
 			return -1;
 		}
 	}else{
-		socket.writeString("-ERR Invalid USER");
+		socket.writeString("-ERR Invalid command");
 		cout << "exiting" << endl;
 		return -1;
 	}
@@ -88,7 +88,7 @@ int Authorize(Socket socket){
 			return -1;
 		}
 	}else{
-		socket.writeString("-ERR Invalid PASS");
+		socket.writeString("-ERR Invalid command");
 		cout << "exiting" << endl;
 		return -1;
 	}
@@ -110,12 +110,16 @@ void Transaction(Socket socket, int boxSpot){
 
 		if(msg.cmd == "STAT"){
 			int octets = 0;
+			int size = 0;
 			rv << "+OK ";
-			rv << users[boxSpot].messages.size();
 			for(int i = 0; i < users[boxSpot].messages.size(); i++){
-				octets = octets + users[boxSpot].messages[i].message.size();
+				if(!(users[boxSpot].messages[i].toDelete)){
+					octets = octets + users[boxSpot].messages[i].message.size();
+					++size;
+				}
 			}
-			rv << " " << octets;
+			cout << size << endl;
+			rv << size << " " << octets;
 			socket.writeString(rv.str());
 		}
 		else if(msg.cmd == "LIST"){
@@ -169,7 +173,7 @@ void Transaction(Socket socket, int boxSpot){
 				socket.writeString(rv.str());
 				
 				if(users[boxSpot].messages[num-1].message == "."){
-					string str = users[boxSpot].messages[num-1].message + ".";
+					string str = "..";
 					socket.writeString(str);
 				}
 				else{
@@ -302,7 +306,13 @@ void client(string addr, string port){
 		if((input == "LIST") || input.substr(0,4) == "RETR"){
 			do{
 				output = s.readString();
-				cout << output << endl;
+				if((output.size() > 1) && (output[0] == '.')){
+					output.erase(output.begin());
+					cout << output << endl;
+					output.push_back('.');
+				}else{
+					cout << output << endl;
+				}
 			}while(output != ".");
 		}else{
 			output = s.readString();

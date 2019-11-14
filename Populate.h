@@ -14,7 +14,7 @@ void populateMailbox(){
 
 	Mail tempMail1;
 	tempMail.toDelete = false;
-	tempMail.message = "Test";
+	tempMail.message = ".";
 	Mail tempMail2;
 	tempMail2.toDelete = false;
 	tempMail2.message = "test\n.\nmulti";
